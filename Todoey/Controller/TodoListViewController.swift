@@ -12,36 +12,30 @@ class TodoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
-    let defaults = UserDefaults.standard
+    // save items in the to do list
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("items.plist")
+
     
     override func viewDidLoad() {
-        super.viewDidLoad()
-       
-        let newItem = Item()
-        newItem.title = "Find Mike"
-        newItem.done = true
-        itemArray.append(newItem)
+    super.viewDidLoad()
+
+    //grab the first item and going to print this data
+
         
-        let newItem2 = Item()
-        newItem.title = "Buy Eggos"
-        itemArray.append(newItem2)
+        print(dataFilePath)
         
-        let newItem3 = Item()
-        newItem.title = "Destroy Demogrgon"
-        itemArray.append(newItem3)
+ 
         
+        loadItems()
         
-        
-        if let items = defaults.array(forKey: "TodoListArray") as? [Item] {
-            itemArray = items
-        }
+
     }
-    
+
     // decide the number of Rows of the table View
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return itemArray.count
     }
-    
+
     // put items on every row
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
@@ -54,28 +48,26 @@ class TodoListViewController: UITableViewController {
         // Ternary operator ==>
         // value = dondition ? valueIfTrue : valueIFFalsec
         
-        cell.accessoryType = item.done == true ? .checkmark : .none
+        // if item.done == true, then cell.accessoryType will set to .checkmark. Otherwise, cell.accessoryType will set to .none
+        cell.accessoryType = item.done ? .checkmark : .none
         
         return cell
     }
-    
+
     // Mark - TableView Delegate Methods
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        //        print(itemArray[indexPath.row])
-        
-        // if it is true,  then it be will false. if it is false, it will be true
+       
         itemArray[indexPath.row].done = !itemArray[indexPath.row].done
         
-        
-        tableView.reloadData()
+        saveItems()
         
         // when item being selected, it will not grey selecting.
         tableView.deselectRow(at: indexPath, animated: true)
         
     }
-    
+
     //Mark - Add new items
-    
+
     @IBAction func addButtonPressed(_ sender: Any) {
         var textField = UITextField()
         let alert = UIAlertController(title: "Add Item", message: "", preferredStyle: .alert)
@@ -89,8 +81,7 @@ class TodoListViewController: UITableViewController {
             
             self.itemArray.append(newItem)
             
-            self.defaults.set(self.itemArray, forKey: "TodoListArray")
-            
+            self.saveItems()
             self.tableView.reloadData()
             
         }
@@ -105,5 +96,39 @@ class TodoListViewController: UITableViewController {
       present(alert, animated: true, completion: nil)
         
     }
+
+    //Mark - Model Manupulation Methods
     
+    func saveItems(){
+        let encoder = PropertyListEncoder()
+        
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Error encoding item array, \(error)")
+        }
+        self.tableView.reloadData()
+        
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+            itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Error decoding item array, \(error)")
+            }
+        }
+    }
+
 }
+
+
+
+
+
+
+
+
